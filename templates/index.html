@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+    <title>Traductor Español-Inglés</title>
+    <style>
+        /* Estilos generales */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Tema claro */
+        body.light-mode {
+            background-color: #f8f9fa;
+            color: #212529;
+        }
+
+        /* Tema oscuro */
+        body.dark-mode {
+            background-color: #212529;
+            color: #f8f9fa;
+        }
+
+        .container {
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            margin: 20px 0;
+        }
+
+        textarea, select, button {
+            font-size: 16px;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ced4da;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            height: 100px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button:focus, button:active {
+            outline: none;
+            background-color: #0056b3;
+        }
+
+        /* Contenedor del resultado */
+        #result-container {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #result {
+            margin-top: 10px;
+            text-align: center;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+            color: inherit;
+            max-width: 100%;
+        }
+
+        .copy-btn {
+            margin-top: 10px;
+            background-color: #28a745;
+            color: #fff;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .copy-btn:hover {
+            background-color: #218838;
+        }
+
+        .copy-btn:focus, .copy-btn:active {
+            outline: none;
+            background-color: #218838;
+        }
+
+        /* Estilo del mensaje de confirmación */
+        #copyMessage {
+            margin-top: 5px;
+            font-size: 14px;
+            color: #28a745;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        #copyMessage.visible {
+            opacity: 1;
+        }
+
+        /* Botón para modo oscuro/claro */
+        .theme-toggle-wrapper {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+        }
+
+        .theme-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: transparent;
+            border: none;
+            font-size: 16px;
+            color: inherit;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .theme-toggle:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .theme-toggle:focus, .theme-toggle:active {
+            outline: none;
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body class="light-mode">
+    <div class="theme-toggle-wrapper">
+        <button class="theme-toggle" id="themeToggle">🌙 Dark Mode</button>
+    </div>
+    <div class="container">
+        <h1>Traductor Español-Inglés</h1>
+        <textarea id="text" placeholder="Escribe el texto aquí..."></textarea><br>
+        <select id="target_language">
+            <option value="en">Inglés</option>
+            <option value="es">Español</option>
+        </select><br>
+        <button id="translateButton">Traducir</button>
+        <div id="result-container">
+            <h2>Traducción:</h2>
+            <p id="result"></p>
+            <button class="copy-btn" id="copyButton" style="display: none;">Copiar al portapapeles</button>
+            <p id="copyMessage">Traducción copiada</p>
+        </div>
+    </div>
+
+    <script>
+        // Función para traducir el texto
+        document.getElementById("translateButton").addEventListener("click", async function () {
+            const text = document.getElementById('text').value;
+            const targetLanguage = document.getElementById('target_language').value;
+
+            if (!text || !targetLanguage) {
+                document.getElementById('result').innerText = 'Por favor, ingrese texto y seleccione un idioma.';
+                document.getElementById('copyButton').style.display = 'none';
+                return;
+            }
+
+            try {
+                const response = await fetch('/translate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text, target_language: targetLanguage })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    document.getElementById('result').innerText = `Error: ${errorData.error}`;
+                    document.getElementById('copyButton').style.display = 'none';
+                    return;
+                }
+
+                const data = await response.json();
+                document.getElementById('result').innerText = data.translated_text;
+                document.getElementById('result').style.backgroundColor = document.body.classList.contains('dark-mode') ? '#343a40' : '#f8f9fa';
+                document.getElementById('result').style.color = document.body.classList.contains('dark-mode') ? '#f8f9fa' : '#212529';
+                document.getElementById('copyButton').style.display = 'block';
+            } catch (error) {
+                document.getElementById('result').innerText = `Error de red: ${error.message}`;
+                document.getElementById('copyButton').style.display = 'none';
+            }
+        });
+
+        // Función para copiar al portapapeles
+        document.getElementById("copyButton").addEventListener("click", function () {
+            const resultText = document.getElementById('result').innerText;
+            navigator.clipboard.writeText(resultText)
+                .then(() => {
+                    const copyMessage = document.getElementById('copyMessage');
+                    copyMessage.classList.add('visible');
+                    setTimeout(() => {
+                        copyMessage.classList.remove('visible');
+                    }, 2000); // El mensaje desaparece después de 2 segundos
+                })
+                .catch(err => {
+                    alert("Error al copiar al portapapeles: " + err);
+                });
+        });
+
+        // Función para alternar entre temas claro y oscuro
+        const themeToggle = document.getElementById('themeToggle');
+        themeToggle.addEventListener('click', function () {
+            const body = document.body;
+            if (body.classList.contains('light-mode')) {
+                body.classList.remove('light-mode');
+                body.classList.add('dark-mode');
+                themeToggle.textContent = '☀️ Light Mode';
+            } else {
+                body.classList.remove('dark-mode');
+                body.classList.add('light-mode');
+                themeToggle.textContent = '🌙 Dark Mode';
+            }
+        });
+    </script>
+</body>
+</html>
